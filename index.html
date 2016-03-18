@@ -3,8 +3,12 @@
 <head>
     <meta charset="utf-8">
     <link rel="stylesheet" type="text/css" href="https://cdn.mxpnl.com/libs/mixpanel-platform/css/reset.css">
+    <link rel="stylesheet" type="text/css" href="https://cdn.mxpnl.com/cache/8ea4a91cd70389613b271278f237f282/bundle/reports.min.css">
     <link rel="stylesheet" type="text/css" href="https://cdn.mxpnl.com/libs/mixpanel-platform/build/mixpanel-platform.v0.latest.min.css">
-    <script src="https://cdn.mxpnl.com/libs/mixpanel-platform/build/mixpanel-platform.v0.latest.min.js?a=1"></script>
+    <link rel="stylesheet" type="text/css" href="https://cdn.rawgit.com/mixpanel-platform/mixpanel-unicorn-1-855433-K9huT8m/master/styles.css">
+    <script src="https://cdn.mxpnl.com/libs/mixpanel-platform/build/mixpanel-platform.v0.latest.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-dateFormat/1.0/jquery.dateFormat.js"></script>
+    <script src="https://cdn.rawgit.com/mixpanel-platform/mixpanel-unicorn-1-855433-K9huT8m/master/md5.js"></script>
     <script src="ace/ace.js" type="text/javascript" charset="utf-8"></script>
     <script src="json2csv.js" type="text/javascript" charset="utf-8"></script>
     <link rel="stylesheet" type="text/css" href="style.css">
@@ -12,6 +16,19 @@
 </head>
 
 <body class="mixpanel-platform-body">
+  
+  <div class="mixpanel-platform-section">
+      <input style="float: left;" class="myInput" placeholder="API Key" id="projectKey"/>
+      <input style="float: left;" class="myInput" placeholder="API Secret" id="projectSecret"/>
+      <a class="button button_primary" id="submitCred">Set API Credentials</a>
+      <div style="clear: both;"></div>
+    </div>
+    <div class="mixpanel-platform-section">
+        <div style="float: left;" id="dateSelect"></div>
+        <div style="float: left;margin-left:20px;" id="scriptType"></div>
+        <div style="clear: both;"></div>
+    </div>
+        <div id="chart"></div>
 
 <div id="wrapper">
 <div id="editor_wrapper">
@@ -54,6 +71,79 @@
     <div id="output_json" class="output_pane active" data-tab="json"></div>
     <div id="output_table" class="output_pane" data-tab="table"></div>
 </div>
+
+<script>
+      var dateSelect  = $('#dateSelect').MPDatepicker();
+      $('#dateRange').MPDatepicker();
+
+      var scriptType = {
+          items: [
+            {label: '--', value: '-'},
+            {label: 'Event Names', value: 0},
+            {label: 'Reverse Spec', value: 1},
+          ]
+        };
+
+        $(document).ready(function() {
+            var dropdown = $('#scriptType').MPSelect(scriptType);     
+            dropdown.on('change', function(e, selection) {      
+                runScript($('#scriptType').val());
+            });
+        });
+
+        var runScript = function(val) {
+            switch (val) {
+                case 0: //event names
+                var e_args = {
+                                type:"general", 
+                                limit:1000, 
+                                expire:Math.floor(new Date().getTime() / 1000 + 3600)
+                            };
+                    getData(e_args,"events/names");
+                    break;
+                case 1: //reverse spec
+                    break;
+            }  
+        };
+
+        var getData = function(args, endPoint) {
+            var api_secret, arg_keys, args_concat, end_point, key, 
+            mixpanel_base_uri, sig, sorted_keys, _i, _len;
+            end_point = endPoint;
+            api_secret = "bf7a39e99c9d0a006e112693736a3e20";
+            args.api_key = "38c148dea80e5275078afc8d3ed8db10";
+            arg_keys = Object.keys(args);
+            sorted_keys = arg_keys.sort();
+            args_concat = "";
+
+            //concatenating key value pairs
+            for (_i = 0, _len = sorted_keys.length; _i < _len; _i++) {
+              key = sorted_keys[_i];
+              args_concat = "" + args_concat + key + "=" + args[key];
+            }
+            sig = $.md5(args_concat + api_secret);
+
+            //merge signature property with args hash
+            $.extend(args, {
+              sig: sig
+            });
+
+            //export endpoint isn't part of the main api and data.mixpanel instead of just mixpanel.com
+            DATA_URI = "https://data.mixpanel.com/api/2.0"
+            DEFAULT_URI = "https://mixpanel.com/api/2.0"
+            BASE_URI = end_point === "export" ? DATA_URI : DEFAULT_URI;
+            $.getJSON("" + BASE_URI + "/" + end_point, args, function(result) {
+              console.log(result);
+            }); 
+        };
+
+
+       $(function() {
+      $("#submitCred").click(function() {
+        MP.api.setCredentials($('#projectKey').val(), $('#projectSecret').val());
+      });
+});
+    </script>
 
 <script>
     $(document).ready(function() {
